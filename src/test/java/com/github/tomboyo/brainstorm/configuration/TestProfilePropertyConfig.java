@@ -1,7 +1,6 @@
 package com.github.tomboyo.brainstorm.configuration;
 
-import static java.util.Objects.requireNonNull;
-
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,17 +12,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.Scope;
 
 @Configuration
-@PropertySource("${spring.config.location}")
-@Profile("!test")
-public class PropertyConfig {
-	@Bean
+@Profile("test")
+public class TestProfilePropertyConfig {
+	@Bean @Scope("prototype")
+	public static TemporaryDirectory tempDir() throws IOException {
+		return new TemporaryDirectory("test-");
+	}
+
+	@Bean @Scope("prototype")
 	public static Path notebookDirectory(
-		@Value("${notebook.directory}") String directory
+		TemporaryDirectory tmpDir
 	) {
-		return Path.of(directory);
+		return tmpDir.getPath();
 	}
 
 	@Bean

@@ -1,4 +1,4 @@
-package com.github.tomboyo.brainstorm;
+package com.github.tomboyo.brainstorm.emitter;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -18,6 +18,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.apache.camel.CamelExecutionException;
+import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +45,12 @@ public class NotebookFileChangeService {
 		@Qualifier("notebookDirectory") Path notebookDirectory,
 		@Qualifier("notebookFileExtensions") Set<String> extensions,
 		ThreadPoolTaskExecutor executor,
-		@Qualifier("fileEventProducerTemplate") ProducerTemplate producer
+		@Qualifier("fileEventProducer") ProducerTemplate producer
 	) throws IOException {
 		this.notebookDirectory = notebookDirectory;
 		this.extensions = extensions;
 		this.executor = executor;
 		this.producer = producer;
-
 		watcher = FileSystems.getDefault().newWatchService();
 	}
 
@@ -63,6 +63,13 @@ public class NotebookFileChangeService {
 		watchTask = executor.submit(this::watch);
 	}
 
+	public Path getNotebookDirecotry() {
+		return notebookDirectory;
+	}
+
+	/**
+	 * Do not close any autowired resources. Let the container do that.
+	 */
 	@PreDestroy
 	public void shutdown() {
 		watchTask.cancel(true);
@@ -71,12 +78,6 @@ public class NotebookFileChangeService {
 			watcher.close();
 		} catch (IOException e) {
 			logger.warn("Failed to close watch service", e);
-		}
-
-		try {
-			producer.close();
-		} catch (IOException e) {
-			logger.warn("Failed to close producer template", e);
 		}
 	}
 

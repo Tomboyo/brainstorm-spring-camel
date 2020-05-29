@@ -8,13 +8,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
-@Profile("!test")
-public class AppConfig {
-	@Bean
-	public CamelContext defaultCamelContext() {
-		return new DefaultCamelContext();
-	}
-	
+@Profile("test")
+public class TestProfileAppConfig {
 	@Bean
 	public ThreadPoolTaskExecutor defaultExecutor() {
 		return new ThreadPoolTaskExecutor();
