@@ -13,10 +13,11 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.apache.camel.springboot:camel-spring-boot-starter:3.3.0'
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	testImplementation 'org.apache.camel:camel-test-spring-junit5:3.3.0'
 }
 
 test {

@@ -1,4 +1,4 @@
-package com.github.tomboyo.brainstorm.brainstorm;
+package com.github.tomboyo.brainstorm;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
