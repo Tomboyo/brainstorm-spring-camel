@@ -2,6 +2,11 @@ plugins {
 	id 'org.springframework.boot' version '2.3.0.RELEASE'
 	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
 	id 'java'
+	
+	// Preview support.
+	// See https://github.com/redhat-developer/vscode-java/issues/671
+	id 'java-library'
+	id 'eclipse'
 }
 
 group = 'com.github.tomboyo.brainstorm'
@@ -12,9 +17,31 @@ repositories {
 	mavenCentral()
 }
 
+// see https://github.com/redhat-developer/vscode-java/issues/671
+compileJava {
+	options.compilerArgs += ["--enable-preview"]
+}
+compileTestJava {
+	options.compilerArgs += ["--enable-preview"]
+}
+eclipse.jdt.file.withProperties { props ->
+	props['org.eclipse.jdt.core.compiler.problem.enablePreviewFeatures'] = 'enabled'
+	props['org.eclipse.jdt.core.compiler.problem.reportPreviewFeatures'] = 'ignore'
+}
+test {
+	jvmArgs '--enable-preview'
+}
+bootRun {
+	jvmArgs '--enable-preview'
+}
+
 dependencies {
 	implementation 'org.apache.camel.springboot:camel-spring-boot-starter:3.3.0'
 	implementation 'org.apache.camel:camel-file-watch:3.3.0'
+	implementation('org.neo4j:neo4j:4.0.4') {
+		exclude group: 'org.slf4j', module: 'slf4j-nop'
+	}
+	implementation 'org.neo4j:neo4j-bolt:4.0.4'
 
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
