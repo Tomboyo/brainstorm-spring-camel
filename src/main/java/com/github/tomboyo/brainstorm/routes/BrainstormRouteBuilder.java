@@ -58,7 +58,7 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 			.get("/ok").route().transform().constant("OK");
 		
 		rest("/graph")
-			.get("/{location}")
+			.get("/")
 				.produces("application/json")
 			.route()
 				.to("log:query?level=INFO")

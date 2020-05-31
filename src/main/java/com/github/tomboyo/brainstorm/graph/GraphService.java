@@ -52,16 +52,17 @@ public class GraphService {
 		try (var tx = db.beginTx()) {
 			var result = tx.execute(
 				"""
-				MATCH (source:Document)-[r]->(:Document)
-				WHERE source.location = $location
-				RETURN r.location, r.context
+				MATCH (a:Document)-[r]-(b:Document)
+				WHERE a.location = $location
+				RETURN r.context, b.location
 				""", query.toMap());
 			
 			references = result.stream()
 				.map(map -> {
+					System.out.println(map);
 					var destination = Document.fromString(
-						(String) map.get("location"));
-					var context = (String) map.get("context");
+						(String) map.get("b.location"));
+					var context = (String) map.get("r.context");
 					return new Reference(source, destination, context);
 				})
 				.collect(Collectors.toSet());
