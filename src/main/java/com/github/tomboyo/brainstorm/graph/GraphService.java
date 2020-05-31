@@ -1,13 +1,12 @@
 package com.github.tomboyo.brainstorm.graph;
 
-import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 
+import com.github.tomboyo.brainstorm.configuration.PropertyConfig;
 import com.github.tomboyo.brainstorm.graph.command.Query;
 import com.github.tomboyo.brainstorm.graph.command.Update;
 import com.github.tomboyo.brainstorm.graph.model.Document;
@@ -19,11 +18,8 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,11 +27,12 @@ public class GraphService {
 	private final DatabaseManagementService management;
 	private final GraphDatabaseService db;
 
+	@Autowired
 	public GraphService(
-		@Value("${data.directory}") String dataDirectory
+		PropertyConfig config
 	) {
 		management = new DatabaseManagementServiceBuilder(
-				Paths.get(dataDirectory).toFile())
+				config.dataDirectory().toFile())
 			.setConfig(BoltConnector.enabled, true)
 			.setConfig(BoltConnector.listen_address,
 				new SocketAddress("localhost", 7687))

@@ -13,17 +13,24 @@ import org.springframework.stereotype.Component;
 @Component
 @PropertySource("${configuration.file}")
 public class PropertyConfig {
+	private final Path dataDirectory;
 	private final Path notebookDirectory;
 	private final Set<String> notebookFileExtensions;
 
 	@Autowired
 	public PropertyConfig(
-		@Value("${notebook.directory}") String directory,
+		@Value("${data.directory}") String dataDir,
+		@Value("${notebook.directory}") String notebookDir,
 		@Value("${notebook.file.extensions}") String extensions
 	) {
-		this.notebookDirectory = Path.of(directory);
+		this.dataDirectory = Path.of(dataDir);
+		this.notebookDirectory = Path.of(notebookDir);
 		this.notebookFileExtensions =
 			PropertyUtil.parseNotebookFileExtensions(extensions);
+	}
+
+	public Path dataDirectory() {
+		return dataDirectory;
 	}
 
 	public Path notebookDirectory() {
