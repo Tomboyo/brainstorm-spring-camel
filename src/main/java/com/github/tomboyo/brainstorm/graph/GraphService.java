@@ -48,27 +48,44 @@ public class GraphService {
 
 	public Graph query(Query query) {
 		var source = new Document(query.location());
-		Set<Reference> references;
-		try (var tx = db.beginTx()) {
-			var result = tx.execute(
-				"""
-				MATCH (a:Document)-[r]-(b:Document)
-				WHERE a.location = $location
-				RETURN r.context, b.location
-				""", query.toMap());
-			
-			references = result.stream()
-				.map(map -> {
-					System.out.println(map);
-					var destination = Document.fromString(
-						(String) map.get("b.location"));
-					var context = (String) map.get("r.context");
-					return new Reference(source, destination, context);
-				})
-				.collect(Collectors.toSet());
-		}
 		
-		return new Graph(source, references);
+		try (var tx = db.beginTx()) {
+			return new Graph(
+				source,
+				outboundReferences(tx, query),
+				inboundReferences(tx, query));
+		}
+	}
+
+	private Set<Reference> outboundReferences(Transaction tx, Query query) {
+		return tx.execute("""
+			MATCH (from:Document)-[r:Reference]->(to:Document)
+			WHERE from.location = $location
+			RETURN
+				from.location, r.context, to.location
+			""", query.toMap()
+		).stream()
+			.map(map -> new Reference(
+				Document.fromString((String) map.get("from.location")),
+				Document.fromString((String) map.get("to.location")),
+				(String) map.get("r.context")))
+			.collect(Collectors.toSet());
+	}
+
+	private Set<Reference> inboundReferences(Transaction tx, Query query) {
+		return tx.execute(
+			"""
+			MATCH (to:Document)<-[r:Reference]-(from:Document)
+			WHERE to.location = $location
+			RETURN
+				from.location, r.context, to.location
+			""", query.toMap()
+		).stream()
+			.map(map -> new Reference(
+				Document.fromString((String) map.get("from.location")),
+				Document.fromString((String) map.get("to.location")),
+				(String) map.get("r.context")))
+			.collect(Collectors.toSet());
 	}
 
 	public void update(Update update) {

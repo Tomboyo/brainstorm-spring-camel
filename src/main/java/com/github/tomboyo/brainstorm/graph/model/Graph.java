@@ -4,5 +4,6 @@ import java.util.Set;
 
 public record Graph(
 	Document source,
-	Set<Reference> references
+	Set<Reference> outbound,
+	Set<Reference> inbound
 ) {}
