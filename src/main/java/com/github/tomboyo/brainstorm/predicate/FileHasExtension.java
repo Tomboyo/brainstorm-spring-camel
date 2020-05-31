@@ -1,7 +1,6 @@
 package com.github.tomboyo.brainstorm.predicate;
 
 import java.io.File;
-import java.util.Set;
 
 import com.github.tomboyo.brainstorm.configuration.PropertyConfig;
 import com.github.tomboyo.brainstorm.util.FileUtil;

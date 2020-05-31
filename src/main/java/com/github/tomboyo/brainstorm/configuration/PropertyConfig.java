@@ -7,13 +7,11 @@ import com.github.tomboyo.brainstorm.util.PropertyUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Component
 @PropertySource("${configuration.file}")
-@Profile("!test")
 public class PropertyConfig {
 	private final Path notebookDirectory;
 	private final Set<String> notebookFileExtensions;

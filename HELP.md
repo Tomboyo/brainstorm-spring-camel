@@ -1,4 +1,22 @@
-# Getting Started
+# Overview
+
+This is a practice project to create a small event-driven application in Spring,
+Camel, and Java 14 (using preview features).
+
+The application, "Brainstorm," is metadata service that tracks references
+between documents in an Asciidoc notebook. As a user creates, modifies, and
+deletes files, Brainstorm updates a graph data structure with nodes for each
+page of notes and edges for each inter-document reference. This graph is exposed
+via an HTTP endpoint so that the user can see all inbound and outbound
+references to and from a queried document.
+
+# Development Setup
+
+## Gradlew
+
+We use ./gradlew for building. Your IDE may request that you whitelist the
+./gradlew jar's checksum for security reasons. Consult the following website to
+verify the checksum: https://gradle.org/release-checksums/.
 
 ## Java Preview Features
 
@@ -7,6 +25,12 @@ requires additional configuration to correctly compile the code. If using
 VScode, execute the `./gradlew eclipseJdt` task, which will perform necessary
 configuration for you. For other IDEs, see
 https://github.com/redhat-developer/vscode-java/issues/671.
+
+## Cypher Shell
+
+The embedded Neo4J database is exposed on `localhost:7687` by default. You can
+install `cypher-shell` to query the embedded database while the application is
+running.
 
 ## Reference Documentation
 For further reference, please consider the following sections:

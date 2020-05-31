@@ -1,9 +1,12 @@
 package com.github.tomboyo.brainstorm.routes;
 
+import static java.lang.String.format;
+
 import com.github.tomboyo.brainstorm.configuration.PropertyConfig;
 import com.github.tomboyo.brainstorm.predicate.FileHasExtension;
-import com.github.tomboyo.brainstorm.processor.DocumentReferenceProcessor;
-import com.github.tomboyo.brainstorm.processor.GraphProcessor;
+import com.github.tomboyo.brainstorm.processor.AdocDocumentUpdateProcessor;
+import com.github.tomboyo.brainstorm.processor.GraphQueryProcessor;
+import com.github.tomboyo.brainstorm.processor.GraphUpdateProcessor;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +23,18 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 	private FileHasExtension fileHasExtension;
 
 	@Autowired
-	private DocumentReferenceProcessor documentReferenceProcessor;
+	private AdocDocumentUpdateProcessor documentReferenceProcessor;
 
 	@Autowired
-	private GraphProcessor graphProcessor;
+	private GraphUpdateProcessor graphUpdateProcessor;
+
+	@Autowired
+	private GraphQueryProcessor graphQueryProcessor;
 	
 	@Override
 	public void configure() throws Exception {
-		from("file-watch:" + config.notebookDirectory())
+		from(format("file-watch:%s?events=CREATE,MODIFY",
+				config.notebookDirectory()))
 			.filter(fileHasExtension)
 			.to("log:file.change?level=INFO")
 			.to("vm:file.change");
@@ -38,6 +45,27 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 			.to("vm:graph.update");
 		
 		from("vm:graph.update")
-			.process(graphProcessor);
+			.process(graphUpdateProcessor);
+
+		// TODO: split into two builders?
+
+		restConfiguration()
+			.component("netty-http")
+			.port("8080")
+			.host("localhost");
+		
+		rest("/status")
+			.get("/ok").route().transform().constant("OK");
+		
+		rest("/graph")
+			.get("/{location}")
+				.produces("application/json")
+			.route()
+				.to("log:query?level=INFO")
+				.to("direct:query");
+		
+		from("direct:query")
+			.process(graphQueryProcessor)
+			.to("log:query?level=INFO");
 	}
 }
