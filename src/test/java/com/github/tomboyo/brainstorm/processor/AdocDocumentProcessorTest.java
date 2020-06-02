@@ -38,6 +38,9 @@ public class AdocDocumentProcessorTest {
 		assertEquals(actual, expected);
 	}
 
+	/**
+	 * Ensure references are parsed despite presence of white space.
+	 */
 	@Test
 	public void process_ignoreWhitespace() throws Exception {
 		var document = notebookDir.resolve("foo.adoc");
