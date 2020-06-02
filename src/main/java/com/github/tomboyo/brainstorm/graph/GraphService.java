@@ -1,5 +1,6 @@
 package com.github.tomboyo.brainstorm.graph;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -59,44 +60,41 @@ public class GraphService {
 
 	private Set<Reference> outboundReferences(Transaction tx, Query query) {
 		return tx.execute("""
-			MATCH (from:Document)-[r:Reference]->(to:Document)
-			WHERE from.location = $location
+			MATCH (source:Document)-[r:Reference]->(dest:Document)
+			WHERE source.location = $location
 			RETURN
-				from.location, r.context, to.location
-			""", query.toMap()
+				r.context, dest.location
+			""", Map.of("location", query.location().toString())
 		).stream()
 			.map(map -> new Reference(
-				Document.fromString((String) map.get("from.location")),
-				Document.fromString((String) map.get("to.location")),
-				(String) map.get("r.context")))
+				(String) map.get("r.context"),
+				new Document(URI.create((String) map.get("dest.location")))))
 			.collect(Collectors.toSet());
 	}
 
 	private Set<Reference> inboundReferences(Transaction tx, Query query) {
 		return tx.execute(
 			"""
-			MATCH (to:Document)<-[r:Reference]-(from:Document)
-			WHERE to.location = $location
+			MATCH (source:Document)<-[r:Reference]-(dest:Document)
+			WHERE source.location = $location
 			RETURN
-				from.location, r.context, to.location
-			""", query.toMap()
+				r.context, dest.location
+			""", Map.of("location", query.location().toString())
 		).stream()
 			.map(map -> new Reference(
-				Document.fromString((String) map.get("from.location")),
-				Document.fromString((String) map.get("to.location")),
-				(String) map.get("r.context")))
+				(String) map.get("r.context"),
+				new Document(URI.create((String) map.get("dest.location")))))
 			.collect(Collectors.toSet());
 	}
 
 	public void update(Update update) {
 		try (var tx = db.beginTx()) {
-			var source = update.source().toMap();
-			mergeDocument(tx, source);
-			removeOutboundReferences(tx, source);
+			mergeDocument(tx, update.source());
+			removeOutboundReferences(tx, update.source());
 
 			update.outboundReferences().stream().forEach(ref -> {
-				mergeDocument(tx, ref.destination().toMap());
-				createOutboundReference(tx, ref.toMap());
+				mergeDocument(tx, ref.destination());
+				createOutboundReference(tx, update.source(), ref);
 			});
 
 			tx.commit();
@@ -105,34 +103,42 @@ public class GraphService {
 
 	private static void mergeDocument(
 		Transaction tx,
-		Map<String, Object> params
+		Document document
 	) {
-		tx.execute("MERGE (:Document {location: $location})", params);
+		tx.execute(
+			"MERGE (:Document {location: $location})",
+			Map.of("location", document.uri().toString()));
 	}
 
 	private static void removeOutboundReferences(
 		Transaction tx,
-		Map<String, Object> params
+		Document document
 	) {
 		tx.execute(
 			"""
 			MATCH (source:Document)-[r:Reference]->(:Document)
 			WHERE source.location = $location
 			DELETE r
-			""", params);
+			""",
+			Map.of("location", document.uri().toString()));
 	}
 
 	private static void createOutboundReference(
 		Transaction tx,
-		Map<String, Object> params
+		Document source,
+		Reference reference
 	) {
 		tx.execute(
 			"""
 			MATCH (source:Document), (destination:Document)
-			WHERE source.location = $source.location
-			AND destination.location = $destination.location
+			WHERE source.location = $source
+			AND destination.location = $destination
 			CREATE (source)-[reference:Reference]->(destination)
 			SET reference.context = $context
-			""", params);
+			""", Map.of(
+				"source", source.uri().toString(),
+				"destination", reference.destination().uri().toString(),
+				"context", reference.context()
+			));
 	}
 }

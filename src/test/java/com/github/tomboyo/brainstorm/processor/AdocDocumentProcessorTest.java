@@ -2,7 +2,8 @@ package com.github.tomboyo.brainstorm.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 
 import com.github.tomboyo.brainstorm.graph.command.Update;
@@ -10,75 +11,75 @@ import com.github.tomboyo.brainstorm.graph.model.Document;
 import com.github.tomboyo.brainstorm.graph.model.Reference;
 
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.io.TempDir;
 
 public class AdocDocumentProcessorTest {
+	@TempDir Path notebookDir;
 
+	/**
+	 * Happy-path: Given a File whose contents contain adoc references to other
+	 * adoc documents, create an Update containing all such references from the
+	 * file.
+	 */
 	@Test
-	public void createCommand() throws Exception {
-		var subject = new AdocDocumentUpdateProcessor(
-			(_path) ->
-				"""
-				foo <<foo.adoc#foosection,footext>> bar
-				foo bar baz
-				foo <<bar.adoc#barsection,bartext>> bar
-				""");
+	public void process() throws Exception {
+		var document = notebookDir.resolve("foo.adoc");
+		Files.writeString(document, "lorem <<bar.adoc#section,context>> ipsum");
 
-		var actual = subject.createCommand(Paths.get("/foo/bar/baz.adoc"));
+		var actual = AdocDocumentUpdateProcessor.process(document.toFile());
 
-		var source = new Document(Paths.get("/foo/bar/baz.adoc"));
 		var expected = new Update(
-			source,
+			new Document(document.toUri()),
 			Set.of(
 				new Reference(
-					source,
-					new Document(Paths.get("/foo/bar/foo.adoc")),
-					"footext"),
-				new Reference(
-					source,
-					new Document(Paths.get("/foo/bar/bar.adoc")),
-					"bartext")));
+					"context",
+					new Document(notebookDir.resolve("bar.adoc").toUri()))));
 		
-		assertEquals(expected, actual);
+		assertEquals(actual, expected);
 	}
 
 	@Test
-	public void references_ignoreWhitespace() throws Exception {
-		var subject = new AdocDocumentUpdateProcessor(
-			(_path) -> "<< \n\tfoo.adoc \n\t# \n\tfoosection \n\t, \n\tfootext \n\t>>");
-		
-		var actual = subject.createCommand(Paths.get("/foo/bar/baz.adoc"));
+	public void process_ignoreWhitespace() throws Exception {
+		var document = notebookDir.resolve("foo.adoc");
+		Files.writeString(document,
+			"\n\t <<\n\t bar.adoc\n\t #\n\t section\n\t ,\n\t context\n\t >>\n\t ");
 
-		var source = new Document(Paths.get("/foo/bar/baz.adoc"));
+		var actual = AdocDocumentUpdateProcessor.process(document.toFile());
+
 		var expected = new Update(
-			source,
+			new Document(document.toUri()),
 			Set.of(
 				new Reference(
-					source,
-					new Document(Paths.get("/foo/bar/foo.adoc")),
-					"footext")));
+					"context",
+					new Document(notebookDir.resolve("bar.adoc").toUri()))));
 		
-		assertEquals(expected, actual);
+		assertEquals(actual, expected);
 	}
 
+	/**
+	 * Adoc references can omit the .adoc extension, and so the following are
+	 * equivalent:
+	 * 
+	 * <<bar.adoc#...>>
+	 * <<bar#...>>
+	 * 
+	 * Regardless of which is used, all Refernce instance URIs must contain the
+	 * adoc extension.
+	 */
 	@Test
 	public void references_addsImpliedExtensions() throws Exception {
-		var subject = new AdocDocumentUpdateProcessor(
-			// The reference is to the extensionless `foo`
-			(_path) -> "<<foo#section,displaytext>>");
-		
-		var actual = subject.createCommand(Paths.get("/foo/bar/source.adoc"));
+		var document = notebookDir.resolve("foo.adoc");
+		Files.writeString(document, "<<bar#section,context>>");
 
-		var source = new Document(Paths.get("/foo/bar/source.adoc"));
+		var actual = AdocDocumentUpdateProcessor.process(document.toFile());
+
 		var expected = new Update(
-			source,
+			new Document(document.toUri()),
 			Set.of(
 				new Reference(
-					source,
-					// The destination assumes the `.adoc` extension
-					new Document(Paths.get("/foo/bar/foo.adoc")),
-					"displaytext")));
+					"context",
+					new Document(notebookDir.resolve("bar.adoc").toUri()))));
 		
-		assertEquals(expected, actual);
+		assertEquals(actual, expected);
 	}
 }

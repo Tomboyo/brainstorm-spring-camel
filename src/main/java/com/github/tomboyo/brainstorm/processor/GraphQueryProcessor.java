@@ -1,5 +1,7 @@
 package com.github.tomboyo.brainstorm.processor;
 
+import java.net.URI;
+
 import com.github.tomboyo.brainstorm.graph.GraphService;
 import com.github.tomboyo.brainstorm.graph.command.Query;
 
@@ -17,7 +19,8 @@ public class GraphQueryProcessor implements Processor {
 	public void process(Exchange exchange) throws Exception {
 		var message = exchange.getIn();
 		var location = message.getHeader("location", String.class);
-		var graph = graphService.query(Query.fromString(location));
+		// TODO: new URI may throw; this should equate to a 400.
+		var graph = graphService.query(new Query(new URI(location)));
 		exchange.getMessage().setBody(graph);
 	}
 }

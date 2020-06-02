@@ -2,34 +2,25 @@ package com.github.tomboyo.brainstorm.processor;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Set;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.github.tomboyo.brainstorm.graph.command.Update;
 import com.github.tomboyo.brainstorm.graph.model.Document;
 import com.github.tomboyo.brainstorm.graph.model.Reference;
-import com.github.tomboyo.brainstorm.processor.reader.DocumentReader;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AdocDocumentUpdateProcessor implements Processor {
 	private static final Pattern referencePattern = newReferencePattern();
-
-	private final DocumentReader reader;
-
-	@Autowired
-	public AdocDocumentUpdateProcessor(
-		DocumentReader reader
-	) {
-		this.reader = reader;
-	}
 
 	private static final Pattern newReferencePattern() {
 		var file = "([^#]+)";
@@ -42,33 +33,41 @@ public class AdocDocumentUpdateProcessor implements Processor {
 
 	@Override
 	public void process(Exchange exchange) throws Exception {
-		var body = exchange.getIn().getBody(File.class);
-		var command = createCommand(body.toPath());
-		exchange.getMessage().setBody(command);
+		exchange.getMessage().setBody(
+			process(exchange.getIn().getBody(File.class)));
 	}
 
 	/**
-	 * Create an Update command based on the contents of a given File.
+	 * Given an adoc file, process its references into an Update.
+	 * 
+	 * </p>
+	 * Package-visible for testing without Camel.
 	 */
-	public Update createCommand(Path path) throws IOException {
-		var source = new Document(path);
-		var references = parseReferences(source, reader.read(path));
-		return new Update(source, references);
+	static Update process(File document) throws IOException {
+		var path = document.toPath();
+		var contents = new String(Files.readAllBytes(path), "utf8");
+		return createUpdateCommand(path, contents);
 	}
 
-	private static Set<Reference> parseReferences(
-		Document source,
-		String documentContents
-	) {
-		return referencePattern.matcher(documentContents).results()
-			.map(result -> {
-				var destinationPath = source.location().getParent()
-					.resolve(result.group(1).trim());
-				destinationPath = withImpliedExtension(destinationPath);
-				var destination = new Document(destinationPath);
-				return new Reference(source, destination, result.group(2).trim());
-			})
-			.collect(Collectors.toSet());
+	private static Update createUpdateCommand(
+		Path updated,
+		String contents
+	) throws IOException {
+		return new Update(
+			new Document(updated.toUri()),
+			referencePattern.matcher(contents).results()
+				.map(result -> createReference(updated, result))
+				.collect(Collectors.toSet()));
+	}
+
+	private static Reference createReference(Path updated, MatchResult result) {
+		var destination = updated.getParent().resolve(
+			result.group(1).trim());
+		var context = result.group(2).trim();
+
+		return new Reference(
+			context,
+			new Document(withImpliedExtension(destination).toUri()));
 	}
 
 	/**
