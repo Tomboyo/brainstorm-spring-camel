@@ -22,9 +22,8 @@ verify the checksum: https://gradle.org/release-checksums/.
 
 This gradle project has Java preview features enabled. However, your IDE
 requires additional configuration to correctly compile the code. If using
-VScode, execute the `./gradlew eclipseJdt` task, which will perform necessary
-configuration for you. For other IDEs, see
-https://github.com/redhat-developer/vscode-java/issues/671.
+VScode, the `./gradlew eclipseJdt` task will perform that configuration. See
+https://github.com/redhat-developer/vscode-java/issues/671 for more information.
 
 ## Cypher Shell
 
