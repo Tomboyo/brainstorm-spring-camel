@@ -1,5 +1,6 @@
 package com.github.tomboyo.brainstorm.graph;
 
+import java.io.File;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
@@ -7,7 +8,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 
-import com.github.tomboyo.brainstorm.configuration.PropertyConfig;
 import com.github.tomboyo.brainstorm.graph.command.Query;
 import com.github.tomboyo.brainstorm.graph.command.Update;
 import com.github.tomboyo.brainstorm.graph.model.Document;
@@ -21,6 +21,7 @@ import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,10 +31,9 @@ public class GraphService {
 
 	@Autowired
 	public GraphService(
-		PropertyConfig config
+		@Qualifier("data.directory") File dataDir
 	) {
-		management = new DatabaseManagementServiceBuilder(
-				config.dataDirectory().toFile())
+		management = new DatabaseManagementServiceBuilder(dataDir)
 			.setConfig(BoltConnector.enabled, true)
 			.setConfig(BoltConnector.listen_address,
 				new SocketAddress("localhost", 7687))

@@ -1,6 +1,7 @@
 package com.github.tomboyo.brainstorm.routes;
 
-import com.github.tomboyo.brainstorm.configuration.PropertyConfig;
+import java.nio.file.Path;
+
 import com.github.tomboyo.brainstorm.predicate.IsAdocFile;
 import com.github.tomboyo.brainstorm.processor.AdocDocumentUpdateProcessor;
 import com.github.tomboyo.brainstorm.processor.GraphQueryProcessor;
@@ -8,14 +9,15 @@ import com.github.tomboyo.brainstorm.processor.GraphUpdateProcessor;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!test")
 public class BrainstormRouteBuilder extends RouteBuilder {
-	@Autowired
-	private PropertyConfig config;
+	@Autowired @Qualifier("notebook.directory")
+	private Path notebookDirectory;
 
 	@Autowired
 	private IsAdocFile isAdocFile;
@@ -31,8 +33,7 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 	
 	@Override
 	public void configure() throws Exception {
-		fromF("file-watch:%s?events=CREATE,MODIFY",
-				config.notebookDirectory())
+		fromF("file-watch:%s?events=CREATE,MODIFY", notebookDirectory)
 			.filter(isAdocFile)
 			.to("log:file.change?level=INFO")
 			.process(documentReferenceProcessor)
