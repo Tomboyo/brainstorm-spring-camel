@@ -1,7 +1,7 @@
 package com.github.tomboyo.brainstorm.routes;
 
 import com.github.tomboyo.brainstorm.configuration.PropertyConfig;
-import com.github.tomboyo.brainstorm.predicate.FileHasExtension;
+import com.github.tomboyo.brainstorm.predicate.IsAdocFile;
 import com.github.tomboyo.brainstorm.processor.AdocDocumentUpdateProcessor;
 import com.github.tomboyo.brainstorm.processor.GraphQueryProcessor;
 import com.github.tomboyo.brainstorm.processor.GraphUpdateProcessor;
@@ -18,7 +18,7 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 	private PropertyConfig config;
 
 	@Autowired
-	private FileHasExtension fileHasExtension;
+	private IsAdocFile isAdocFile;
 
 	@Autowired
 	private AdocDocumentUpdateProcessor documentReferenceProcessor;
@@ -33,7 +33,7 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 	public void configure() throws Exception {
 		fromF("file-watch:%s?events=CREATE,MODIFY",
 				config.notebookDirectory())
-			.filter(fileHasExtension)
+			.filter(isAdocFile)
 			.to("log:file.change?level=INFO")
 			.process(documentReferenceProcessor)
 			.to("log:file.processed?level=INFO")
