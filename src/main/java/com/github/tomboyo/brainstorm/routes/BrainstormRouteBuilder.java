@@ -43,7 +43,8 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 		restConfiguration()
 			.component("netty-http")
 			.port("8080")
-			.host("localhost");
+			.host("localhost")
+			.bindingMode("auto");
 		
 		rest("/graph")
 			.get("/")
