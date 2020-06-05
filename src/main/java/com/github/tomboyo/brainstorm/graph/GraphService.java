@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 
-import com.github.tomboyo.brainstorm.graph.command.Query;
 import com.github.tomboyo.brainstorm.graph.command.Update;
 import com.github.tomboyo.brainstorm.graph.model.Document;
 import com.github.tomboyo.brainstorm.graph.model.Graph;
@@ -47,24 +46,24 @@ public class GraphService {
 		management.shutdown();
 	}
 
-	public Graph query(Query query) {
-		var source = new Document(query.location());
+	public Graph query(URI location) {
+		var source = new Document(location);
 		
 		try (var tx = db.beginTx()) {
 			return new Graph(
 				source,
-				outboundReferences(tx, query),
-				inboundReferences(tx, query));
+				outboundReferences(tx, location),
+				inboundReferences(tx, location));
 		}
 	}
 
-	private Set<Reference> outboundReferences(Transaction tx, Query query) {
+	private Set<Reference> outboundReferences(Transaction tx, URI location) {
 		return tx.execute("""
 			MATCH (source:Document)-[r:Reference]->(dest:Document)
 			WHERE source.location = $location
 			RETURN
 				r.context, dest.location
-			""", Map.of("location", query.location().toString())
+			""", Map.of("location", location.toString())
 		).stream()
 			.map(map -> new Reference(
 				(String) map.get("r.context"),
@@ -72,14 +71,14 @@ public class GraphService {
 			.collect(Collectors.toSet());
 	}
 
-	private Set<Reference> inboundReferences(Transaction tx, Query query) {
+	private Set<Reference> inboundReferences(Transaction tx, URI location) {
 		return tx.execute(
 			"""
 			MATCH (source:Document)<-[r:Reference]-(dest:Document)
 			WHERE source.location = $location
 			RETURN
 				r.context, dest.location
-			""", Map.of("location", query.location().toString())
+			""", Map.of("location", location.toString())
 		).stream()
 			.map(map -> new Reference(
 				(String) map.get("r.context"),

@@ -3,7 +3,6 @@ package com.github.tomboyo.brainstorm.processor;
 import java.net.URI;
 
 import com.github.tomboyo.brainstorm.graph.GraphService;
-import com.github.tomboyo.brainstorm.graph.command.Query;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -20,7 +19,7 @@ public class GraphQueryProcessor implements Processor {
 		var message = exchange.getIn();
 		var location = message.getHeader("location", String.class);
 		// TODO: new URI may throw; this should equate to a 400.
-		var graph = graphService.query(new Query(new URI(location)));
+		var graph = graphService.query(new URI(location));
 		exchange.getMessage().setBody(graph);
 	}
 }
