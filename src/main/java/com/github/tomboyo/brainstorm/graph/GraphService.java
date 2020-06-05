@@ -141,4 +141,8 @@ public class GraphService {
 				"context", reference.context()
 			));
 	}
+
+	public void delete(URI location) {
+		
+	}
 }

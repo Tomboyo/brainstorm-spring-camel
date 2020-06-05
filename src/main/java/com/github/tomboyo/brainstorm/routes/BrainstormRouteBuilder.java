@@ -1,7 +1,10 @@
 package com.github.tomboyo.brainstorm.routes;
 
+import java.io.File;
+import java.net.URI;
 import java.nio.file.Path;
 
+import com.github.tomboyo.brainstorm.graph.GraphService;
 import com.github.tomboyo.brainstorm.predicate.IsAdocFile;
 import com.github.tomboyo.brainstorm.processor.AdocDocumentUpdateProcessor;
 import com.github.tomboyo.brainstorm.processor.GraphQueryProcessor;
@@ -20,25 +23,36 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 	private Path notebookDirectory;
 
 	@Autowired
+	private GraphService graphService;
+
+	@Autowired
 	private IsAdocFile isAdocFile;
 
 	@Autowired
-	private AdocDocumentUpdateProcessor documentReferenceProcessor;
+	private AdocDocumentUpdateProcessor documentUpdate;
 
 	@Autowired
-	private GraphUpdateProcessor graphUpdateProcessor;
+	private GraphUpdateProcessor graphUpdate;
 
 	@Autowired
-	private GraphQueryProcessor graphQueryProcessor;
+	private GraphQueryProcessor graphQuery;
 	
 	@Override
 	public void configure() throws Exception {
 		fromF("file-watch:%s?events=CREATE,MODIFY", notebookDirectory)
 			.filter(isAdocFile)
 			.to("log:file.change?level=INFO")
-			.process(documentReferenceProcessor)
-			.to("log:file.processed?level=INFO")
-			.process(graphUpdateProcessor);
+			.process(documentUpdate)
+			.to("log:file.processed?level=DEBUG")
+			.process(graphUpdate);
+		
+		fromF("file-watch:%s?events=DELETE", notebookDirectory)
+			.filter(isAdocFile)
+			.transform()
+				.body(File.class, File::toURI)
+			.to("log:file.change?level=INFO")
+			.process()
+				.body(URI.class, graphService::delete);
 
 		restConfiguration()
 			.component("netty-http")
@@ -51,6 +65,6 @@ public class BrainstormRouteBuilder extends RouteBuilder {
 				.produces("application/json")
 			.route()
 				.to("log:query?level=INFO")
-				.process(graphQueryProcessor);
+				.process(graphQuery);
 	}
 }
