@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 
 import com.github.tomboyo.brainstorm.graph.command.Update;
@@ -12,21 +13,24 @@ import com.github.tomboyo.brainstorm.graph.model.Document;
 import com.github.tomboyo.brainstorm.graph.model.Graph;
 import com.github.tomboyo.brainstorm.graph.model.Reference;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class GraphServiceTest {
-	@TempDir
-	protected Path tempDir;
-
 	private GraphService subject;
 
 	@BeforeEach
-	public void setup() throws Exception {
-		var dataDir = tempDir.resolve("test-data");
-		Files.createDirectories(dataDir);
+	public void setup(
+		@TempDir Path dataDir
+	) throws Exception {
 		subject = new GraphService(dataDir.toFile());
+	}
+
+	@AfterEach
+	public void tearDown() {
+		subject.shutdown();
 	}
 
 	/**
@@ -45,7 +49,7 @@ public class GraphServiceTest {
 					"context for baz",
 					new Document(URI.create("baz"))))));
 		
-		var expected = new Graph(
+		var expected = Optional.of(new Graph(
 			new Document(URI.create("foo")),
 			Set.of(
 				new Reference(
@@ -54,8 +58,62 @@ public class GraphServiceTest {
 				new Reference(
 					"context for baz",
 					new Document(URI.create("baz")))),
-			Set.of());
+			Set.of()));
 		
 		assertEquals(expected, subject.query(URI.create("foo")));
+	}
+
+	/**
+	 * If we delete a document which is referenced by others, then the document
+	 * and its inbound references are preserved, but its outbound references are
+	 * deleted.
+	 */
+	@Test
+	public void deleteReferencedDocument() {
+		subject.update(new Update(
+			new Document(URI.create("A")),
+			Set.of(
+				new Reference(
+					"A -> B",
+					new Document(URI.create("B"))))));
+		subject.update(new Update(
+			new Document(URI.create("B")),
+			Set.of(
+				new Reference(
+					"B -> A",
+					new Document(URI.create("A"))))));
+		
+		subject.delete(URI.create("A"));
+
+		var actual = subject.query(URI.create("A"));
+		var expected = Optional.of(new Graph(
+			new Document(URI.create("A")),
+			Set.of(), // no outbound references
+			Set.of(
+				new Reference(
+					"B -> A",
+					new Document(URI.create("B"))))));
+		
+		assertEquals(expected, actual);
+	}
+
+	/**
+	 * If we delete a document which is not referenced by others ("orphaned"),
+	 * then both it and all of its outbound references are deleted.
+	 */
+	@Test
+	public void deleteUnreferencedDocument() {
+		subject.update(new Update(
+			new Document(URI.create("A")),
+			Set.of(
+				new Reference(
+					"A -> B",
+					new Document(URI.create("B"))))));
+		
+		subject.delete(URI.create("A"));
+		var actual = subject.query(URI.create("A"));
+		var expected = Optional.empty();
+
+		assertEquals(expected, actual);
 	}
 }

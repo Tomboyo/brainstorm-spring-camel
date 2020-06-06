@@ -7,64 +7,47 @@ import java.nio.file.Path;
 import com.github.tomboyo.brainstorm.graph.GraphService;
 import com.github.tomboyo.brainstorm.predicate.IsAdocFile;
 import com.github.tomboyo.brainstorm.processor.AdocDocumentUpdateProcessor;
-import com.github.tomboyo.brainstorm.processor.GraphQueryProcessor;
 import com.github.tomboyo.brainstorm.processor.GraphUpdateProcessor;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!test")
-public class BrainstormRouteBuilder extends RouteBuilder {
+public class DocumentIngestion extends RouteBuilder {
 	@Autowired @Qualifier("notebook.directory")
 	private Path notebookDirectory;
-
-	@Autowired
-	private GraphService graphService;
 
 	@Autowired
 	private IsAdocFile isAdocFile;
 
 	@Autowired
-	private AdocDocumentUpdateProcessor documentUpdate;
+	private AdocDocumentUpdateProcessor toUpdate;
 
 	@Autowired
 	private GraphUpdateProcessor graphUpdate;
 
 	@Autowired
-	private GraphQueryProcessor graphQuery;
-	
+	private GraphService graphService;
+
 	@Override
 	public void configure() throws Exception {
 		fromF("file-watch:%s?events=CREATE,MODIFY", notebookDirectory)
 			.filter(isAdocFile)
-			.to("log:file.change?level=INFO")
-			.process(documentUpdate)
-			.to("log:file.processed?level=DEBUG")
+			.to("log:adoc.file.modified?level=INFO")
+			.process(toUpdate)
 			.process(graphUpdate);
 		
 		fromF("file-watch:%s?events=DELETE", notebookDirectory)
 			.filter(isAdocFile)
+			.to("log:adoc.file.deleted?level=INFO")
 			.transform()
-				.body(File.class, File::toURI)
-			.to("log:file.change?level=INFO")
+				// file.toUri().toStirng() != file.toPath().toUri().toString()
+				// This matters to the graph service, since our routes make use
+				// of Path as an intermediary representation.
+				.body(File.class, file -> file.toPath().toUri())
 			.process()
 				.body(URI.class, graphService::delete);
-
-		restConfiguration()
-			.component("netty-http")
-			.port("8080")
-			.host("localhost")
-			.bindingMode("auto");
-		
-		rest("/graph")
-			.get("/")
-				.produces("application/json")
-			.route()
-				.to("log:query?level=INFO")
-				.process(graphQuery);
 	}
 }

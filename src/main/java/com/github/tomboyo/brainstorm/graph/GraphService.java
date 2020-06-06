@@ -3,6 +3,7 @@ package com.github.tomboyo.brainstorm.graph;
 import java.io.File;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,12 +20,17 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GraphService {
+	private static final Logger logger =
+		LoggerFactory.getLogger(GraphService.class);
+
 	private final DatabaseManagementService management;
 	private final GraphDatabaseService db;
 
@@ -46,15 +52,27 @@ public class GraphService {
 		management.shutdown();
 	}
 
-	public Graph query(URI location) {
-		var source = new Document(location);
-		
+	public Optional<Graph> query(URI location) {
+		logger.debug("Processing query at URI={}", location);
+
 		try (var tx = db.beginTx()) {
-			return new Graph(
-				source,
-				outboundReferences(tx, location),
-				inboundReferences(tx, location));
+			return findDocument(tx, location)
+				.map(source -> new Graph(
+					source,
+					outboundReferences(tx, location),
+					inboundReferences(tx, location)));
 		}
+	}
+
+	private Optional<Document> findDocument(Transaction tx, URI location) {
+		return tx.execute("""
+			MATCH (source:Document)
+			WHERE source.location = $location
+			return true;
+			""", Map.of("location", location.toString())
+		).stream()
+			.map(map -> new Document(location))
+			.findFirst();
 	}
 
 	private Set<Reference> outboundReferences(Transaction tx, URI location) {
@@ -87,6 +105,8 @@ public class GraphService {
 	}
 
 	public void update(Update update) {
+		logger.debug("Processing update for Update={}", update);
+		
 		try (var tx = db.beginTx()) {
 			mergeDocument(tx, update.source());
 			removeOutboundReferences(tx, update.source());
@@ -142,6 +162,28 @@ public class GraphService {
 	}
 
 	public void delete(URI location) {
-		
+		logger.debug("Processing delete at URI={}", location);
+
+		try (var tx = db.beginTx()) {
+			// Delete all outbound references from the deleted Document
+			tx.execute(
+				"""
+				MATCH (source:Document)-[r:Reference]->(:Document)
+				WHERE source.location = $location
+				DELETE r
+				""", Map.of("location", location.toString()));
+			
+			// If the Document is detached, furthermore delete it. But leave the
+			// Document if other documents still reference it.
+			tx.execute(
+				"""
+				MATCH (source:Document)
+				WHERE source.location = $location
+				AND NOT (source)<-[:Reference]-(:Document)
+				DELETE source
+				""", Map.of("location", location.toString()));
+			
+			tx.commit();
+		}
 	}
 }
