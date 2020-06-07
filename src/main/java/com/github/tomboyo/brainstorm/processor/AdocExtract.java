@@ -1,8 +1,6 @@
 package com.github.tomboyo.brainstorm.processor;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,12 +12,10 @@ import com.github.tomboyo.brainstorm.graph.command.Update;
 import com.github.tomboyo.brainstorm.graph.model.Document;
 import com.github.tomboyo.brainstorm.graph.model.Reference;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AdocDocumentUpdateProcessor implements Processor {
+public class AdocExtract {
 	private static final Pattern referencePattern = newReferencePattern();
 
 	private static final Pattern newReferencePattern() {
@@ -31,20 +27,10 @@ public class AdocDocumentUpdateProcessor implements Processor {
 		return Pattern.compile(pattern);
 	}
 
-	@Override
-	public void process(Exchange exchange) throws Exception {
-		exchange.getMessage().setBody(
-			process(exchange.getIn().getBody(File.class)));
-	}
-
 	/**
-	 * Given an adoc file, process its references into an Update.
-	 * 
-	 * </p>
-	 * Package-visible for testing without Camel.
+	 * Given an adoc file, extract its references into an Update.
 	 */
-	static Update process(File document) throws IOException {
-		var path = document.toPath();
+	public static Update extractUpdate(Path path) throws IOException {
 		var contents = new String(Files.readAllBytes(path), "utf8");
 		return createUpdateCommand(path, contents);
 	}

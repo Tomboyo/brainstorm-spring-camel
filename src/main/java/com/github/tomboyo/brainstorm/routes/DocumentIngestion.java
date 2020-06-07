@@ -1,13 +1,15 @@
 package com.github.tomboyo.brainstorm.routes;
 
+import static com.github.tomboyo.brainstorm.util.Functions.tunneledFunction;
+
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 
 import com.github.tomboyo.brainstorm.graph.GraphService;
-import com.github.tomboyo.brainstorm.predicate.IsAdocFile;
-import com.github.tomboyo.brainstorm.processor.AdocDocumentUpdateProcessor;
-import com.github.tomboyo.brainstorm.processor.GraphUpdateProcessor;
+import com.github.tomboyo.brainstorm.graph.command.Update;
+import com.github.tomboyo.brainstorm.processor.AdocExtract;
+import com.github.tomboyo.brainstorm.util.FileUtil;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,17 +18,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DocumentIngestion extends RouteBuilder {
+	private static final String logPrefix =
+		DocumentIngestion.class.getName();
+
 	@Autowired @Qualifier("notebook.directory")
 	private Path notebookDirectory;
-
-	@Autowired
-	private IsAdocFile isAdocFile;
-
-	@Autowired
-	private AdocDocumentUpdateProcessor toUpdate;
-
-	@Autowired
-	private GraphUpdateProcessor graphUpdate;
 
 	@Autowired
 	private GraphService graphService;
@@ -34,19 +30,23 @@ public class DocumentIngestion extends RouteBuilder {
 	@Override
 	public void configure() throws Exception {
 		fromF("file-watch:%s?events=CREATE,MODIFY", notebookDirectory)
-			.filter(isAdocFile)
-			.to("log:adoc.file.modified?level=INFO")
-			.process(toUpdate)
-			.process(graphUpdate);
+			.transform().body(File.class, File::toPath)
+			.filter().body(Path.class, FileUtil.hasExtension("adoc"))
+			.toF("log:%s.adocFileModified?level=INFO", logPrefix)
+			.transform().body(
+				Path.class, tunneledFunction(AdocExtract::extractUpdate))
+			.toF("log:%s.adocUpdate?level=DEBUG", logPrefix)
+			.process().body(Update.class, graphService::update);
 		
 		fromF("file-watch:%s?events=DELETE", notebookDirectory)
-			.filter(isAdocFile)
-			.to("log:adoc.file.deleted?level=INFO")
+			.transform().body(File.class, File::toPath)
+			.filter().body(Path.class, FileUtil.hasExtension("adoc"))
+			.toF("log:%s.adocFileDeleted?level=INFO", logPrefix)
 			.transform()
 				// file.toUri().toStirng() != file.toPath().toUri().toString()
 				// This matters to the graph service, since our routes make use
 				// of Path as an intermediary representation.
-				.body(File.class, file -> file.toPath().toUri())
+				.body(Path.class, path -> path.toUri())
 			.process()
 				.body(URI.class, graphService::delete);
 	}

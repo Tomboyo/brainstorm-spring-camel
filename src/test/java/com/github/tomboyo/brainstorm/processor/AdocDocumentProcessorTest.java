@@ -22,11 +22,11 @@ public class AdocDocumentProcessorTest {
 	 * file.
 	 */
 	@Test
-	public void process() throws Exception {
+	public void extractUpdate() throws Exception {
 		var document = notebookDir.resolve("foo.adoc");
 		Files.writeString(document, "lorem <<bar.adoc#section,context>> ipsum");
 
-		var actual = AdocDocumentUpdateProcessor.process(document.toFile());
+		var actual = AdocExtract.extractUpdate(document);
 
 		var expected = new Update(
 			new Document(document.toUri()),
@@ -42,12 +42,12 @@ public class AdocDocumentProcessorTest {
 	 * Ensure references are parsed despite presence of white space.
 	 */
 	@Test
-	public void process_ignoreWhitespace() throws Exception {
+	public void extractUpdate_ignoreWhitespace() throws Exception {
 		var document = notebookDir.resolve("foo.adoc");
 		Files.writeString(document,
 			"\n\t <<\n\t bar.adoc\n\t #\n\t section\n\t ,\n\t context\n\t >>\n\t ");
 
-		var actual = AdocDocumentUpdateProcessor.process(document.toFile());
+		var actual = AdocExtract.extractUpdate(document);
 
 		var expected = new Update(
 			new Document(document.toUri()),
@@ -70,11 +70,11 @@ public class AdocDocumentProcessorTest {
 	 * adoc extension.
 	 */
 	@Test
-	public void references_addsImpliedExtensions() throws Exception {
+	public void extractUpdate_addsImpliedExtensions() throws Exception {
 		var document = notebookDir.resolve("foo.adoc");
 		Files.writeString(document, "<<bar#section,context>>");
 
-		var actual = AdocDocumentUpdateProcessor.process(document.toFile());
+		var actual = AdocExtract.extractUpdate(document);
 
 		var expected = new Update(
 			new Document(document.toUri()),
