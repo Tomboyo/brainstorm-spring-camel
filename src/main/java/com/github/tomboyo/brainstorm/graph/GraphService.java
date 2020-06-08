@@ -1,7 +1,8 @@
 package com.github.tomboyo.brainstorm.graph;
 
 import java.io.File;
-import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -52,8 +53,8 @@ public class GraphService {
 		management.shutdown();
 	}
 
-	public Optional<Graph> query(URI location) {
-		logger.debug("Processing query at URI={}", location);
+	public Optional<Graph> query(Path location) {
+		logger.debug("Processing query at Path={}", location);
 
 		try (var tx = db.beginTx()) {
 			return findDocument(tx, location)
@@ -64,7 +65,7 @@ public class GraphService {
 		}
 	}
 
-	private Optional<Document> findDocument(Transaction tx, URI location) {
+	private Optional<Document> findDocument(Transaction tx, Path location) {
 		return tx.execute("""
 			MATCH (source:Document)
 			WHERE source.location = $location
@@ -75,7 +76,7 @@ public class GraphService {
 			.findFirst();
 	}
 
-	private Set<Reference> outboundReferences(Transaction tx, URI location) {
+	private Set<Reference> outboundReferences(Transaction tx, Path location) {
 		return tx.execute("""
 			MATCH (source:Document)-[r:Reference]->(dest:Document)
 			WHERE source.location = $location
@@ -85,11 +86,11 @@ public class GraphService {
 		).stream()
 			.map(map -> new Reference(
 				(String) map.get("r.context"),
-				new Document(URI.create((String) map.get("dest.location")))))
+				new Document(Paths.get((String) map.get("dest.location")))))
 			.collect(Collectors.toSet());
 	}
 
-	private Set<Reference> inboundReferences(Transaction tx, URI location) {
+	private Set<Reference> inboundReferences(Transaction tx, Path location) {
 		return tx.execute(
 			"""
 			MATCH (source:Document)<-[r:Reference]-(dest:Document)
@@ -100,7 +101,7 @@ public class GraphService {
 		).stream()
 			.map(map -> new Reference(
 				(String) map.get("r.context"),
-				new Document(URI.create((String) map.get("dest.location")))))
+				new Document(Paths.get((String) map.get("dest.location")))))
 			.collect(Collectors.toSet());
 	}
 
@@ -126,7 +127,7 @@ public class GraphService {
 	) {
 		tx.execute(
 			"MERGE (:Document {location: $location})",
-			Map.of("location", document.uri().toString()));
+			Map.of("location", document.location().toString()));
 	}
 
 	private static void removeOutboundReferences(
@@ -139,7 +140,7 @@ public class GraphService {
 			WHERE source.location = $location
 			DELETE r
 			""",
-			Map.of("location", document.uri().toString()));
+			Map.of("location", document.location().toString()));
 	}
 
 	private static void createOutboundReference(
@@ -155,14 +156,14 @@ public class GraphService {
 			CREATE (source)-[reference:Reference]->(destination)
 			SET reference.context = $context
 			""", Map.of(
-				"source", source.uri().toString(),
-				"destination", reference.destination().uri().toString(),
+				"source", source.location().toString(),
+				"destination", reference.destination().location().toString(),
 				"context", reference.context()
 			));
 	}
 
-	public void delete(URI location) {
-		logger.debug("Processing delete at URI={}", location);
+	public void delete(Path location) {
+		logger.debug("Processing delete at Path={}", location);
 
 		try (var tx = db.beginTx()) {
 			// Delete all outbound references from the deleted Document

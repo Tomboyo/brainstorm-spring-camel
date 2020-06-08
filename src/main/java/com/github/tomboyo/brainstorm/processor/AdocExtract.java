@@ -40,7 +40,7 @@ public class AdocExtract {
 		String contents
 	) throws IOException {
 		return new Update(
-			new Document(updated.toUri()),
+			new Document(updated),
 			referencePattern.matcher(contents).results()
 				.map(result -> createReference(updated, result))
 				.collect(Collectors.toSet()));
@@ -53,7 +53,7 @@ public class AdocExtract {
 
 		return new Reference(
 			context,
-			new Document(withImpliedExtension(destination).toUri()));
+			new Document(withImpliedExtension(destination)));
 	}
 
 	/**

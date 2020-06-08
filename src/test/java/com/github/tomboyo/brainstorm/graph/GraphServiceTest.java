@@ -2,8 +2,8 @@ package com.github.tomboyo.brainstorm.graph;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Set;
 
@@ -39,27 +39,27 @@ public class GraphServiceTest {
 	@Test
 	public void updateAndQuery() {
 		subject.update(new Update(
-			new Document(URI.create("foo")),
+			new Document(Paths.get("foo")),
 			Set.of(
 				new Reference(
 					"context for bar",
-					new Document(URI.create("bar"))),
+					new Document(Paths.get("bar"))),
 				new Reference(
 					"context for baz",
-					new Document(URI.create("baz"))))));
+					new Document(Paths.get("baz"))))));
 		
 		var expected = Optional.of(new Graph(
-			new Document(URI.create("foo")),
+			new Document(Paths.get("foo")),
 			Set.of(
 				new Reference(
 					"context for bar",
-					new Document(URI.create("bar"))),
+					new Document(Paths.get("bar"))),
 				new Reference(
 					"context for baz",
-					new Document(URI.create("baz")))),
+					new Document(Paths.get("baz")))),
 			Set.of()));
 		
-		assertEquals(expected, subject.query(URI.create("foo")));
+		assertEquals(expected, subject.query(Paths.get("foo")));
 	}
 
 	/**
@@ -70,28 +70,28 @@ public class GraphServiceTest {
 	@Test
 	public void deleteReferencedDocument() {
 		subject.update(new Update(
-			new Document(URI.create("A")),
+			new Document(Paths.get("A")),
 			Set.of(
 				new Reference(
 					"A -> B",
-					new Document(URI.create("B"))))));
+					new Document(Paths.get("B"))))));
 		subject.update(new Update(
-			new Document(URI.create("B")),
+			new Document(Paths.get("B")),
 			Set.of(
 				new Reference(
 					"B -> A",
-					new Document(URI.create("A"))))));
+					new Document(Paths.get("A"))))));
 		
-		subject.delete(URI.create("A"));
+		subject.delete(Paths.get("A"));
 
-		var actual = subject.query(URI.create("A"));
+		var actual = subject.query(Paths.get("A"));
 		var expected = Optional.of(new Graph(
-			new Document(URI.create("A")),
+			new Document(Paths.get("A")),
 			Set.of(), // no outbound references
 			Set.of(
 				new Reference(
 					"B -> A",
-					new Document(URI.create("B"))))));
+					new Document(Paths.get("B"))))));
 		
 		assertEquals(expected, actual);
 	}
@@ -103,14 +103,14 @@ public class GraphServiceTest {
 	@Test
 	public void deleteUnreferencedDocument() {
 		subject.update(new Update(
-			new Document(URI.create("A")),
+			new Document(Paths.get("A")),
 			Set.of(
 				new Reference(
 					"A -> B",
-					new Document(URI.create("B"))))));
+					new Document(Paths.get("B"))))));
 		
-		subject.delete(URI.create("A"));
-		var actual = subject.query(URI.create("A"));
+		subject.delete(Paths.get("A"));
+		var actual = subject.query(Paths.get("A"));
 		var expected = Optional.empty();
 
 		assertEquals(expected, actual);

@@ -3,7 +3,6 @@ package com.github.tomboyo.brainstorm.routes;
 import static com.github.tomboyo.brainstorm.util.Functions.tunneledFunction;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.file.Path;
 
 import com.github.tomboyo.brainstorm.graph.GraphService;
@@ -36,18 +35,19 @@ public class DocumentIngestion extends RouteBuilder {
 			.transform().body(
 				Path.class, tunneledFunction(AdocExtract::extractUpdate))
 			.toF("log:%s.adocUpdate?level=DEBUG", logPrefix)
-			.process().body(Update.class, graphService::update);
+			.transform().body(
+				Update.class, (update) -> {
+					graphService.update(update);
+					return "update=" + update.source().location();
+				})
+			.toF("log:%s.adocIngestComplete?level=DEBUG", logPrefix)
+			.to("vm:ingestComplete");
 		
 		fromF("file-watch:%s?events=DELETE", notebookDirectory)
 			.transform().body(File.class, File::toPath)
 			.filter().body(Path.class, FileUtil.hasExtension("adoc"))
 			.toF("log:%s.adocFileDeleted?level=INFO", logPrefix)
-			.transform()
-				// file.toUri().toStirng() != file.toPath().toUri().toString()
-				// This matters to the graph service, since our routes make use
-				// of Path as an intermediary representation.
-				.body(Path.class, path -> path.toUri())
 			.process()
-				.body(URI.class, graphService::delete);
+				.body(Path.class, graphService::delete);
 	}
 }

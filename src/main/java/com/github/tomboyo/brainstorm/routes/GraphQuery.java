@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GraphQuery extends RouteBuilder {
 	private static final String logPrefix =
-		DocumentIngestion.class.getName();
+		GraphQuery.class.getName();
 	
 	@Autowired
 	private GraphQueryProcessor graphQuery;

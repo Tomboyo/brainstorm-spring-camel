@@ -29,11 +29,11 @@ public class AdocDocumentProcessorTest {
 		var actual = AdocExtract.extractUpdate(document);
 
 		var expected = new Update(
-			new Document(document.toUri()),
+			new Document(document),
 			Set.of(
 				new Reference(
 					"context",
-					new Document(notebookDir.resolve("bar.adoc").toUri()))));
+					new Document(notebookDir.resolve("bar.adoc")))));
 		
 		assertEquals(actual, expected);
 	}
@@ -50,11 +50,11 @@ public class AdocDocumentProcessorTest {
 		var actual = AdocExtract.extractUpdate(document);
 
 		var expected = new Update(
-			new Document(document.toUri()),
+			new Document(document),
 			Set.of(
 				new Reference(
 					"context",
-					new Document(notebookDir.resolve("bar.adoc").toUri()))));
+					new Document(notebookDir.resolve("bar.adoc")))));
 		
 		assertEquals(actual, expected);
 	}
@@ -66,8 +66,8 @@ public class AdocDocumentProcessorTest {
 	 * <<bar.adoc#...>>
 	 * <<bar#...>>
 	 * 
-	 * Regardless of which is used, all Refernce instance URIs must contain the
-	 * adoc extension.
+	 * Regardless of which is used, all Refernce locations must contain the adoc
+	 * extension.
 	 */
 	@Test
 	public void extractUpdate_addsImpliedExtensions() throws Exception {
@@ -77,11 +77,11 @@ public class AdocDocumentProcessorTest {
 		var actual = AdocExtract.extractUpdate(document);
 
 		var expected = new Update(
-			new Document(document.toUri()),
+			new Document(document),
 			Set.of(
 				new Reference(
 					"context",
-					new Document(notebookDir.resolve("bar.adoc").toUri()))));
+					new Document(notebookDir.resolve("bar.adoc")))));
 		
 		assertEquals(actual, expected);
 	}
