@@ -7,6 +7,9 @@ plugins {
 	// See https://github.com/redhat-developer/vscode-java/issues/671
 	id 'java-library'
 	id 'eclipse'
+
+	// Console-based test result formatting
+	id "com.adarshr.test-logger" version "2.0.0"
 }
 
 group = 'com.github.tomboyo.brainstorm'
