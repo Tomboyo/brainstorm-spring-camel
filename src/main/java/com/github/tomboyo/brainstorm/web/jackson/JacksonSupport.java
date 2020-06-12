@@ -1,11 +1,10 @@
-package com.github.tomboyo.brainstorm.jackson;
+package com.github.tomboyo.brainstorm.web.jackson;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;

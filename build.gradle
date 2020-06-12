@@ -39,10 +39,9 @@ bootRun {
 }
 
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.apache.camel.springboot:camel-spring-boot-starter:3.3.0'
 	implementation 'org.apache.camel:camel-file-watch:3.3.0'
-	implementation 'org.apache.camel:camel-rest:3.3.0'
-	implementation 'org.apache.camel:camel-netty-http:3.3.0'
 	implementation 'org.apache.camel:camel-jackson:3.3.0'
 	implementation('org.neo4j:neo4j:4.0.4') {
 		exclude group: 'org.slf4j', module: 'slf4j-nop'
@@ -52,6 +51,7 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation 'org.apache.camel:camel-test-spring-junit5:3.3.0'
 }
 

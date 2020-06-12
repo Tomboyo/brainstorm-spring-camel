@@ -1,4 +1,4 @@
-package com.github.tomboyo.brainstorm.jackson;
+package com.github.tomboyo.brainstorm.web.jackson;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
