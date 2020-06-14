@@ -27,8 +27,9 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 @ActiveProfiles("tempDirs")
 @Disabled("""
-Test cases tend to finish before the graph service is 'ready' for requests. We
-need to make sure tests block until the graph service is ready.
+Spring doesn't start the HTTP endpoint immediately (unlike camel), so we need to
+update this test to use the WebTestClient. Moreover, as it stands this test
+finishes in such a way that other database-driven tests fail. Unclear why.
 """)
 public class EndToEnd {
 	private static final ObjectMapper mapper = new ObjectMapper();
