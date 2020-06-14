@@ -9,8 +9,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 @Configuration
 public class GraphQueryRouter {
-	private GraphQueryRouter() {}
-	
 	@Bean
 	public static RouterFunction<ServerResponse> route(
 		GraphQueryHandler handler
