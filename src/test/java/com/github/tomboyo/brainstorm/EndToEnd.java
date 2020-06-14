@@ -17,6 +17,7 @@ import com.github.tomboyo.brainstorm.graph.model.Graph;
 import com.github.tomboyo.brainstorm.graph.model.Reference;
 
 import org.apache.camel.ConsumerTemplate;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,6 +26,10 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("tempDirs")
+@Disabled("""
+Test cases tend to finish before the graph service is 'ready' for requests. We
+need to make sure tests block until the graph service is ready.
+""")
 public class EndToEnd {
 	private static final ObjectMapper mapper = new ObjectMapper();
 	private static final HttpClient client = HttpClient.newHttpClient();

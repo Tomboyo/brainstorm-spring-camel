@@ -14,9 +14,14 @@ import com.github.tomboyo.brainstorm.graph.model.Reference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@Disabled("""
+Test cases tend to finish before the graph service is 'ready' for requests. We
+need to make sure tests block until the graph service is ready.
+""")
 public class GraphServiceTest {
 	private GraphService subject;
 
