@@ -58,3 +58,9 @@ dependencies {
 test {
 	useJUnitPlatform()
 }
+
+testlogger {
+	showStandardStreams = true
+	showPassedStandardStreams = false
+	showFailedStandardStreams = true
+}

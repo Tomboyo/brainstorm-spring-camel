@@ -1,6 +1,4 @@
-package com.github.tomboyo.brainstorm.web.router;
-
-import com.github.tomboyo.brainstorm.web.handler.GraphHandler;
+package com.github.tomboyo.brainstorm.web.query.graph;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,10 +8,12 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 @Configuration
-public class GraphRouter {
+public class GraphQueryRouter {
+	private GraphQueryRouter() {}
+	
 	@Bean
-	RouterFunction<ServerResponse> route(
-		GraphHandler handler
+	public static RouterFunction<ServerResponse> route(
+		GraphQueryHandler handler
 	) {
 		return RouterFunctions.route(
 			RequestPredicates.GET("/graph"),
