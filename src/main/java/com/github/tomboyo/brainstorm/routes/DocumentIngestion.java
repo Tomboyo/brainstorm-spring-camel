@@ -40,7 +40,6 @@ public class DocumentIngestion extends RouteBuilder {
 					graphService.update(update);
 					return "update=" + update.source().location();
 				})
-			.toF("log:%s.adocIngestComplete?level=DEBUG", logPrefix)
 			.to("vm:ingestComplete");
 		
 		fromF("file-watch:%s?events=DELETE", notebookDirectory)
